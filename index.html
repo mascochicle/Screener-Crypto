@@ -56,6 +56,7 @@
   th.sorted{color:var(--text)} th.sorted .arrow{opacity:1;color:var(--accent2)}
   tbody td{padding:12px 14px;text-align:right;border-bottom:1px solid rgba(42,47,58,.6);font-size:14px}
   tbody tr:hover{background:rgba(59,130,246,.06)}
+  tbody tr[data-sym]{cursor:pointer}
   tbody tr:last-child td{border-bottom:none}
   .tk{display:flex;align-items:center;gap:10px}
   .tk img{width:24px;height:24px;border-radius:50%;background:var(--panel2)}
@@ -136,6 +137,7 @@
 
   <!-- ===================== VISTA TABLAS ===================== -->
   <div id="viewTabla">
+    <p class="note" style="margin:0 0 10px">💡 Haz clic en cualquier fila para abrir su gráfico.</p>
     <section class="card tablecard">
       <div class="thead-row"><h2>🚀 Ganadoras del Día</h2><span class="tsub" id="subDia"></span><span class="tcount">Ganadoras: <b id="cntDia">0</b></span></div>
       <table><thead><tr>
@@ -343,6 +345,7 @@ async function analizar(){
     }, 10);
 
     const good = candidates.filter(c=>!c.bad && c.dailyPct!=null && c.weeklyPct!=null && c.monthlyPct!=null);
+    good.forEach(c=>COIN_BY_SYM.set(c.symbol, c));   // permite abrir el gráfico desde las tablas
     TABLES.dia.data = good.filter(c => c.dailyPct   >  uD && c.weeklyPct  > 0 && c.monthlyPct > 0);
     TABLES.sem.data = good.filter(c => c.weeklyPct  >= uW && c.dailyPct   > 0 && c.monthlyPct > 0);
     TABLES.mes.data = good.filter(c => c.monthlyPct >= uM && c.dailyPct   > 0 && c.weeklyPct  > 0);
@@ -363,7 +366,7 @@ async function analizar(){
 
 // ---------- render tablas ----------
 function rowHtml(c, changeField){
-  return `<tr>
+  return `<tr data-sym="${c.symbol}" title="Clic para ver el gráfico de ${c.symbol}">
     <td><div class="tk"><img src="${c.img||''}" alt="" onerror="this.style.visibility='hidden'">
       <div><div class="sym">${c.symbol}</div><div class="nm">${c.name||''}</div></div></div></td>
     <td><span class="pct">${fmtPct(c[changeField])}</span></td>
@@ -481,6 +484,8 @@ async function drawModal(){
   $('#modalSub').textContent = `${coin.name||''} · ${tfLabel(modalTf)} · ${fmtPrice(coin.price)}`;
   const box = $('#modalBox'); box.innerHTML = '<div class="cherr">Cargando…</div>';
   if(modalChart){ try{modalChart.remove();}catch(e){} modalChart=null; }
+  if(typeof LightweightCharts==='undefined'){ box.innerHTML = '<div class="cherr">No se pudo cargar la librería de gráficos.</div>'; return; }
+  if(!BINANCE){ try{ await pickBinanceBase(); }catch(e){ box.innerHTML = `<div class="cherr">${e.message}</div>`; return; } }
   try{ const rows = await chartKlines(coin.bsym, modalTf); box.innerHTML=''; modalChart = buildChart(box, rows, opt, coin, true, modalTf); }
   catch(e){ box.innerHTML = `<div class="cherr">sin datos (${e.message})</div>`; }
 }
@@ -545,6 +550,8 @@ $('#gNext').addEventListener('click',()=>{ STATE.page++; renderCharts(); });
 // ampliar gráfico: doble clic en la tarjeta o botón ⛶
 $('#grafGrid').addEventListener('dblclick', e=>{ const cell=e.target.closest('.chartcell'); if(cell&&cell.dataset.sym) openModal(cell.dataset.sym); });
 $('#grafGrid').addEventListener('click', e=>{ const b=e.target.closest('.chexp'); if(b){ const cell=b.closest('.chartcell'); if(cell) openModal(cell.dataset.sym); } });
+// clic en una fila de cualquier tabla -> abre su gráfico
+$('#viewTabla').addEventListener('click', e=>{ const tr=e.target.closest('tr[data-sym]'); if(tr) openModal(tr.dataset.sym); });
 $('#modalClose').addEventListener('click', closeModal);
 $('#modal').addEventListener('click', e=>{ if(e.target.id==='modal') closeModal(); });
 document.querySelectorAll('#modalTf button').forEach(b=>b.addEventListener('click',()=>{ modalTf=b.dataset.tf; syncModalTf(); drawModal(); }));
