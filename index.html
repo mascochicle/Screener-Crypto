@@ -28,6 +28,9 @@
   .controls{display:flex;flex-wrap:wrap;gap:14px 18px;align-items:flex-end}
   .ctrl{display:flex;flex-direction:column;gap:5px}
   .ctrl label{font-size:12px;color:var(--muted)}
+  .ctrl label .critchk{vertical-align:-1px;margin-right:4px;accent-color:var(--accent);cursor:pointer}
+  .ctrl.off label{opacity:.45}
+  input[type=number]:disabled{opacity:.4;cursor:not-allowed}
   input[type=number]{width:104px}
   input[type=number],select{background:var(--panel2);border:1px solid var(--border);color:var(--text);
     border-radius:9px;padding:8px 10px;font-size:14px}
@@ -123,9 +126,11 @@
 
   <div class="card">
     <div class="controls">
-      <div class="ctrl"><label>Cambio diario mín. (%)</label><input type="number" id="uD" value="4" step="1" min="0"></div>
-      <div class="ctrl"><label>Cambio semanal mín. (%)</label><input type="number" id="uW" value="5" step="1" min="0"></div>
-      <div class="ctrl"><label>Cambio mensual mín. (%)</label><input type="number" id="uM" value="5" step="1" min="0"></div>
+      <div class="ctrl" id="ctrlD"><label><input type="checkbox" class="critchk" id="cD" checked> Cambio diario mín. (%)</label><input type="number" id="uD" value="4" step="1" min="0"></div>
+      <div class="ctrl" id="ctrlW"><label><input type="checkbox" class="critchk" id="cW" checked> Cambio semanal mín. (%)</label><input type="number" id="uW" value="5" step="1" min="0"></div>
+      <div class="ctrl" id="ctrlM"><label><input type="checkbox" class="critchk" id="cM" checked> Cambio mensual mín. (%)</label><input type="number" id="uM" value="5" step="1" min="0"></div>
+      <div class="ctrl" id="ctrlQ"><label><input type="checkbox" class="critchk" id="cQ"> Cambio trimestral mín. (%)</label><input type="number" id="uQ" value="10" step="1" min="0"></div>
+      <div class="ctrl" id="ctrlY"><label><input type="checkbox" class="critchk" id="cY"> Cambio anual mín. (%)</label><input type="number" id="uY" value="20" step="1" min="0"></div>
       <div class="ctrl"><label>Top por market cap</label><input type="number" id="topn" value="100" step="10" min="10" max="250"></div>
       <div class="ctrl"><label>Auto-actualizar</label>
         <select id="auto"><option value="0">Desactivado</option><option value="300">Cada 5 min</option><option value="900">Cada 15 min</option></select>
@@ -138,7 +143,7 @@
   <!-- ===================== VISTA TABLAS ===================== -->
   <div id="viewTabla">
     <p class="note" style="margin:0 0 10px">💡 Haz clic en cualquier fila para abrir su gráfico.</p>
-    <section class="card tablecard">
+    <section class="card tablecard" id="secDia">
       <div class="thead-row"><h2>🚀 Ganadoras del Día</h2><span class="tsub" id="subDia"></span><span class="tcount">Ganadoras: <b id="cntDia">0</b></span></div>
       <table><thead><tr>
         <th data-table="dia" data-key="symbol">Ticker</th>
@@ -148,7 +153,7 @@
         <th data-table="dia" data-key="mcap">Market Cap <span class="arrow"></span></th>
       </tr></thead><tbody id="rowsDia"><tr><td colspan="5" class="empty">Cargando…</td></tr></tbody></table>
     </section>
-    <section class="card tablecard">
+    <section class="card tablecard" id="secSem">
       <div class="thead-row"><h2>📈 Ganadoras de la Semana</h2><span class="tsub" id="subSem"></span><span class="tcount">Ganadoras: <b id="cntSem">0</b></span></div>
       <table><thead><tr>
         <th data-table="sem" data-key="symbol">Ticker</th>
@@ -158,7 +163,7 @@
         <th data-table="sem" data-key="mcap">Market Cap <span class="arrow"></span></th>
       </tr></thead><tbody id="rowsSem"><tr><td colspan="5" class="empty">Cargando…</td></tr></tbody></table>
     </section>
-    <section class="card tablecard">
+    <section class="card tablecard" id="secMes">
       <div class="thead-row"><h2>🏆 Ganadoras del Mes</h2><span class="tsub" id="subMes"></span><span class="tcount">Ganadoras: <b id="cntMes">0</b></span></div>
       <table><thead><tr>
         <th data-table="mes" data-key="symbol">Ticker</th>
@@ -168,6 +173,27 @@
         <th data-table="mes" data-key="mcap">Market Cap <span class="arrow"></span></th>
       </tr></thead><tbody id="rowsMes"><tr><td colspan="5" class="empty">Cargando…</td></tr></tbody></table>
     </section>
+    <section class="card tablecard" id="secTri">
+      <div class="thead-row"><h2>📅 Ganadoras del Trimestre</h2><span class="tsub" id="subTri"></span><span class="tcount">Ganadoras: <b id="cntTri">0</b></span></div>
+      <table><thead><tr>
+        <th data-table="tri" data-key="symbol">Ticker</th>
+        <th data-table="tri" data-key="quarterlyPct">Cambio del trimestre <span class="arrow"></span></th>
+        <th data-table="tri" data-key="rank" class="sorted">Ranking <span class="arrow">▲</span></th>
+        <th data-table="tri" data-key="price">Precio <span class="arrow"></span></th>
+        <th data-table="tri" data-key="mcap">Market Cap <span class="arrow"></span></th>
+      </tr></thead><tbody id="rowsTri"><tr><td colspan="5" class="empty">Cargando…</td></tr></tbody></table>
+    </section>
+    <section class="card tablecard" id="secAno">
+      <div class="thead-row"><h2>🗓️ Ganadoras del Año</h2><span class="tsub" id="subAno"></span><span class="tcount">Ganadoras: <b id="cntAno">0</b></span></div>
+      <table><thead><tr>
+        <th data-table="ano" data-key="symbol">Ticker</th>
+        <th data-table="ano" data-key="yearlyPct">Cambio del año <span class="arrow"></span></th>
+        <th data-table="ano" data-key="rank" class="sorted">Ranking <span class="arrow">▲</span></th>
+        <th data-table="ano" data-key="price">Precio <span class="arrow"></span></th>
+        <th data-table="ano" data-key="mcap">Market Cap <span class="arrow"></span></th>
+      </tr></thead><tbody id="rowsAno"><tr><td colspan="5" class="empty">Cargando…</td></tr></tbody></table>
+    </section>
+    <div id="noCrit" class="card" hidden style="text-align:center;color:var(--muted)">Enciende al menos un criterio de cambio (arriba) para ver las tablas.</div>
   </div>
 
   <!-- ===================== VISTA GRÁFICOS ===================== -->
@@ -176,9 +202,7 @@
       <div class="gcontrols">
         <div class="ctrl" style="min-width:200px"><label>Mostrar monedas de</label>
           <select id="gSource">
-            <option value="dia">🚀 Ganadoras del Día</option>
-            <option value="sem">📈 Ganadoras de la Semana</option>
-            <option value="mes">🏆 Ganadoras del Mes</option>
+            <option value="win">🏆 Ganadoras (cumplen los filtros)</option>
             <option value="top">Top 100 por market cap</option>
           </select>
         </div>
@@ -253,10 +277,20 @@ const COIN_BY_SYM = new Map();// symbol -> coin (para el modal)
 const STATE = { view:'tabla', tf:'D', page:0, lists:null };
 
 const TABLES = {
-  dia: {tbody:'#rowsDia', cnt:'#cntDia', data:[], change:'dailyPct',   sort:{key:'rank',dir:1}},
-  sem: {tbody:'#rowsSem', cnt:'#cntSem', data:[], change:'weeklyPct',  sort:{key:'rank',dir:1}},
-  mes: {tbody:'#rowsMes', cnt:'#cntMes', data:[], change:'monthlyPct', sort:{key:'rank',dir:1}},
+  dia: {tbody:'#rowsDia', cnt:'#cntDia', sec:'#secDia', data:[], change:'dailyPct',     sort:{key:'rank',dir:1}},
+  sem: {tbody:'#rowsSem', cnt:'#cntSem', sec:'#secSem', data:[], change:'weeklyPct',    sort:{key:'rank',dir:1}},
+  mes: {tbody:'#rowsMes', cnt:'#cntMes', sec:'#secMes', data:[], change:'monthlyPct',   sort:{key:'rank',dir:1}},
+  tri: {tbody:'#rowsTri', cnt:'#cntTri', sec:'#secTri', data:[], change:'quarterlyPct', sort:{key:'rank',dir:1}},
+  ano: {tbody:'#rowsAno', cnt:'#cntAno', sec:'#secAno', data:[], change:'yearlyPct',    sort:{key:'rank',dir:1}},
 };
+// definición de los 5 criterios: id de check, id de umbral, campo calculado, contenedor del control y etiqueta corta
+const CRITS = [
+  {key:'dia', chk:'cD', umb:'uD', field:'dailyPct',     ctrl:'ctrlD', label:'día'},
+  {key:'sem', chk:'cW', umb:'uW', field:'weeklyPct',    ctrl:'ctrlW', label:'semana'},
+  {key:'mes', chk:'cM', umb:'uM', field:'monthlyPct',   ctrl:'ctrlM', label:'mes'},
+  {key:'tri', chk:'cQ', umb:'uQ', field:'quarterlyPct', ctrl:'ctrlQ', label:'trimestre'},
+  {key:'ano', chk:'cY', umb:'uY', field:'yearlyPct',    ctrl:'ctrlY', label:'año'},
+];
 
 // ---------- formato ----------
 const fmtPct = x => x==null?'—':(x>=0?'+':'')+x.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'%';
@@ -285,22 +319,27 @@ async function pickBinanceBase(){
   throw new Error('No se pudo conectar con Binance (¿bloqueo de región o de red?).');
 }
 async function periodos(sym){
-  const r = await fetch(`${BINANCE}/api/v3/klines?symbol=${sym}&interval=1d&limit=40`);
+  const r = await fetch(`${BINANCE}/api/v3/klines?symbol=${sym}&interval=1d&limit=400`);
   if(!r.ok) throw new Error('HTTP '+r.status);
   const d = await r.json();
   if(!Array.isArray(d) || !d.length) throw new Error('sin datos');
   const cur = d[d.length-1];
   const dOpen = +cur[1], price = +cur[4];
   const now = new Date();
+  const y = now.getUTCFullYear(), mo = now.getUTCMonth();
   const dow = (now.getUTCDay()+6)%7;
-  const monday = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()-dow);
-  const first  = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
+  const monday = Date.UTC(y, mo, now.getUTCDate()-dow);
+  const first  = Date.UTC(y, mo, 1);
+  const qFirst = Date.UTC(y, Math.floor(mo/3)*3, 1);   // 1er día del trimestre (ene/abr/jul/oct)
+  const yFirst = Date.UTC(y, 0, 1);                     // 1 de enero
   const openAt = ts => { const c = d.find(k => k[0] >= ts && k[0] < ts+86400000); return c ? +c[1] : null; };
-  const wOpen = openAt(monday), mOpen = openAt(first);
+  const pct = open => open!=null ? (price-open)/open*100 : null;
   return {
     dailyPct:(price-dOpen)/dOpen*100,
-    weeklyPct: wOpen!=null ? (price-wOpen)/wOpen*100 : null,
-    monthlyPct: mOpen!=null ? (price-mOpen)/mOpen*100 : null
+    weeklyPct:    pct(openAt(monday)),
+    monthlyPct:   pct(openAt(first)),
+    quarterlyPct: pct(openAt(qFirst)),
+    yearlyPct:    pct(openAt(yFirst))
   };
 }
 async function pool(items, worker, size=10){
@@ -310,14 +349,12 @@ async function pool(items, worker, size=10){
 }
 
 // ---------- análisis (tablas) ----------
+const cap = s => s.charAt(0).toUpperCase()+s.slice(1);
+
 async function analizar(){
   $('#run').disabled = true;
   try{
-    const uD = parseFloat($('#uD').value)||0, uW = parseFloat($('#uW').value)||0, uM = parseFloat($('#uM').value)||0;
     const topN = Math.min(250, Math.max(10, parseInt($('#topn').value)||100));
-    $('#subDia').textContent = `cambio diario > ${uD}% · semana y mes en verde`;
-    $('#subSem').textContent = `cambio semanal ≥ ${uW}% · día y mes en verde`;
-    $('#subMes').textContent = `cambio mensual ≥ ${uM}% · día y semana en verde`;
 
     setStatus('Conectando con Binance…', true);
     await pickBinanceBase();
@@ -344,24 +381,59 @@ async function analizar(){
       setStatus(`Analizando velas UTC… ${++done}/${candidates.length}`, true);
     }, 10);
 
-    const good = candidates.filter(c=>!c.bad && c.dailyPct!=null && c.weeklyPct!=null && c.monthlyPct!=null);
+    const good = candidates.filter(c=>!c.bad && c.dailyPct!=null);
     good.forEach(c=>COIN_BY_SYM.set(c.symbol, c));   // permite abrir el gráfico desde las tablas
-    TABLES.dia.data = good.filter(c => c.dailyPct   >  uD && c.weeklyPct  > 0 && c.monthlyPct > 0);
-    TABLES.sem.data = good.filter(c => c.weeklyPct  >= uW && c.dailyPct   > 0 && c.monthlyPct > 0);
-    TABLES.mes.data = good.filter(c => c.monthlyPct >= uM && c.dailyPct   > 0 && c.weeklyPct  > 0);
-    STATE.lists = { dia:TABLES.dia.data, sem:TABLES.sem.data, mes:TABLES.mes.data, top:good };
+    STATE.universe = good;
+    STATE.evaluadas = candidates.length;
+    STATE.hora = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
     CACHE.clear();  // datos frescos para los gráficos
-
-    ['dia','sem','mes'].forEach(render);
-    const hora = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
-    setStatus(`Actualizado a las ${hora} · ${good.length} de ${candidates.length} monedas evaluadas.`, false);
     $('#excluded').innerHTML = excluded.length
       ? ` <b>Sin par en Binance (${excluded.length}):</b> ${excluded.slice(0,40).map(c=>c.symbol).join(', ')}${excluded.length>40?'…':''}.`
       : '';
-    if(STATE.view==='graf') renderCharts();
+
+    aplicarFiltros();
   }catch(e){
     setStatus('Error: '+e.message, false, true);
   }finally{ $('#run').disabled = false; }
+}
+
+// sincroniza lo visual (control atenuado y tabla oculta) con el estado de cada check
+function syncCritUI(){
+  CRITS.forEach(cr=>{
+    const on = $('#'+cr.chk).checked;
+    $('#'+cr.umb).disabled = !on;
+    $('#'+cr.ctrl).classList.toggle('off', !on);
+    $(TABLES[cr.key].sec).hidden = !on;
+  });
+}
+// Aplica los criterios activos (checks + umbrales) sobre las monedas ya evaluadas.
+// No usa la red: se llama también al encender/apagar un check o cambiar un umbral.
+function aplicarFiltros(){
+  syncCritUI();
+  const activos = CRITS.filter(cr=>$('#'+cr.chk).checked)
+                       .map(cr=>({...cr, min: parseFloat($('#'+cr.umb).value)||0}));
+  const universe = STATE.universe || [];
+  // ganadora = cumple el % pedido en TODOS los criterios encendidos (los apagados se ignoran)
+  const winners = universe.filter(c => activos.every(a => c[a.field]!=null && c[a.field] >= a.min));
+
+  CRITS.forEach(cr=>{ TABLES[cr.key].data = winners; });
+  STATE.lists = { win: winners, top: universe };
+
+  const resumen = activos.length
+    ? 'Cumplen: ' + activos.map(a=>`${a.label} ≥ ${a.min}%`).join(' · ')
+    : 'sin criterios activos';
+  CRITS.forEach(cr=>{
+    const on = $('#'+cr.chk).checked;
+    $(TABLES[cr.key].sec).hidden = !on;
+    const sub = document.querySelector('#sub'+cap(cr.key));
+    if(sub) sub.textContent = resumen;
+    render(cr.key);
+  });
+  $('#noCrit').hidden = activos.length>0;
+
+  if(STATE.hora!=null)
+    setStatus(`Actualizado a las ${STATE.hora} · ${winners.length} ganadoras de ${STATE.evaluadas} monedas evaluadas.`, false);
+  if(STATE.view==='graf') renderCharts();
 }
 
 // ---------- render tablas ----------
@@ -563,13 +635,16 @@ function savePrefs(){
   try{ localStorage.setItem(PREFS_KEY, JSON.stringify({
     view:STATE.view, tf:STATE.tf, source:$('#gSource').value,
     vol:$('#gVol').checked, sma:$('#gSma').checked, ema:$('#gEma').checked, log:$('#gLog').checked,
-    uD:$('#uD').value, uW:$('#uW').value, uM:$('#uM').value, topn:$('#topn').value, auto:$('#auto').value
+    uD:$('#uD').value, uW:$('#uW').value, uM:$('#uM').value, uQ:$('#uQ').value, uY:$('#uY').value,
+    cD:$('#cD').checked, cW:$('#cW').checked, cM:$('#cM').checked, cQ:$('#cQ').checked, cY:$('#cY').checked,
+    topn:$('#topn').value, auto:$('#auto').value
   })); }catch(e){}
 }
 function applyPrefs(){
   let p; try{ p = JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; }catch(e){ p = {}; }
-  ['uD','uW','uM','topn','auto'].forEach(id=>{ if(p[id]!=null) $('#'+id).value = p[id]; });
-  if(p.source) $('#gSource').value = p.source;
+  ['uD','uW','uM','uQ','uY','topn','auto'].forEach(id=>{ if(p[id]!=null) $('#'+id).value = p[id]; });
+  ['cD','cW','cM','cQ','cY'].forEach(id=>{ if(typeof p[id]==='boolean') $('#'+id).checked = p[id]; });
+  if(p.source && $('#gSource').querySelector(`option[value="${p.source}"]`)) $('#gSource').value = p.source;
   if(typeof p.vol==='boolean') $('#gVol').checked = p.vol;
   if(typeof p.sma==='boolean') $('#gSma').checked = p.sma;
   if(typeof p.ema==='boolean') $('#gEma').checked = p.ema;
@@ -584,11 +659,17 @@ $('#auto').addEventListener('change', e=>{
   const s = parseInt(e.target.value); if(s>0) timer = setInterval(analizar, s*1000);
   savePrefs();
 });
-['uD','uW','uM','topn'].forEach(id=>$('#'+id).addEventListener('change', savePrefs));
+// umbrales de criterio: re-filtra al vuelo (sin volver a bajar datos)
+['uD','uW','uM','uQ','uY'].forEach(id=>$('#'+id).addEventListener('input', ()=>{ if(STATE.universe) aplicarFiltros(); savePrefs(); }));
+// checks de criterio: encienden/apagan y re-filtran
+['cD','cW','cM','cQ','cY'].forEach(id=>$('#'+id).addEventListener('change', ()=>{ if(STATE.universe) aplicarFiltros(); else syncCritUI(); savePrefs(); }));
+// top N cambia el universo: requiere el botón "Actualizar ahora"
+$('#topn').addEventListener('change', savePrefs);
 $('#run').addEventListener('click', analizar);
 
 // ---------- inicio ----------
 const _p = applyPrefs();
+syncCritUI();
 setView(_p.view || 'tabla');
 if(_p.auto && parseInt(_p.auto)>0) timer = setInterval(analizar, parseInt(_p.auto)*1000);
 analizar();
