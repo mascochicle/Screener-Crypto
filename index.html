@@ -211,6 +211,8 @@
             <button data-tf="D" class="active">Diario</button>
             <button data-tf="W">Semanal</button>
             <button data-tf="M">Mensual</button>
+            <button data-tf="Q">Trimestral</button>
+            <button data-tf="Y">Anual</button>
           </div>
         </div>
         <div class="ctrl"><label>Indicadores</label>
@@ -254,6 +256,8 @@
           <button data-tf="D">Diario</button>
           <button data-tf="W">Semanal</button>
           <button data-tf="M">Mensual</button>
+          <button data-tf="Q">Trimestral</button>
+          <button data-tf="Y">Anual</button>
         </div>
         <button class="modal-close" id="modalClose">✕ Cerrar</button>
       </div>
@@ -485,9 +489,32 @@ function ema(rows, period){
 }
 
 // ---------- gráficos ----------
+// Binance no ofrece velas de 3 ni 12 meses: se construyen agrupando las mensuales por calendario.
+// span='Q' agrupa por trimestre (ene-mar, abr-jun, jul-sep, oct-dic); span='Y' agrupa por año.
+function agruparVelas(monthly, span){
+  const grupos = new Map();
+  for(const m of monthly){
+    const dt = new Date(m.time*1000);
+    const g = span==='Q' ? `${dt.getUTCFullYear()}-${Math.floor(dt.getUTCMonth()/3)}` : `${dt.getUTCFullYear()}`;
+    const prev = grupos.get(g);
+    if(!prev) grupos.set(g, { time:m.time, open:m.open, high:m.high, low:m.low, close:m.close, volume:m.volume });
+    else {
+      prev.high = Math.max(prev.high, m.high);
+      prev.low  = Math.min(prev.low,  m.low);
+      prev.close = m.close;      // cierre = última vela del grupo (las mensuales vienen en orden ascendente)
+      prev.volume += m.volume;   // el time y el open se quedan de la primera vela del grupo
+    }
+  }
+  return [...grupos.values()];
+}
 async function chartKlines(sym, tf){
   const key = sym+'_'+tf;
   if(CACHE.has(key)) return CACHE.get(key);
+  if(tf==='Q' || tf==='Y'){                                   // trimestral/anual: se agregan las mensuales
+    const rows = agruparVelas(await chartKlines(sym, 'M'), tf);
+    CACHE.set(key, rows);
+    return rows;
+  }
   const intv = tf==='D'?'1d':tf==='W'?'1w':'1M';
   const lim  = 1000;   // máximo de Binance por consulta: trae toda la historia disponible (semanal/mensual llegan hasta 2017)
   const r = await fetch(`${BINANCE}/api/v3/klines?symbol=${sym}&interval=${intv}&limit=${lim}`);
@@ -499,8 +526,8 @@ async function chartKlines(sym, tf){
   return rows;
 }
 function buildChart(box, rows, opt, coin, big, tf){
-  const displayN = big ? rows.length                    // modal ampliado: toda la historia disponible de la moneda
-                       : (tf==='D'?90:tf==='W'?90:90);   // cuadrícula: ~3 meses (velas grandes para el vistazo)
+  const displayN = (big || tf==='Q' || tf==='Y') ? rows.length   // modal, o trimestral/anual: toda la historia (son pocas velas)
+                       : 90;                                     // cuadrícula diaria/semanal/mensual: ~3 meses (velas grandes)
   const start = Math.max(0, rows.length-displayN);
   const view = rows.slice(start); const t0 = view[0].time;
   const chart = LightweightCharts.createChart(box, {
@@ -528,8 +555,9 @@ function buildChart(box, rows, opt, coin, big, tf){
     const e = chart.addLineSeries({ color:'#2855d1', lineWidth:2, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
     e.setData(ema(rows,20).filter(p=>p.time>=t0));
   }
-  // deja ~10 barras de espacio entre la última vela y el eje de precios
-  chart.timeScale().setVisibleLogicalRange({ from: 0, to: view.length + 9 });
+  // deja espacio a la derecha (menos en trimestral/anual, que tienen pocas velas)
+  const margen = (tf==='Q'||tf==='Y') ? 1 : 9;
+  chart.timeScale().setVisibleLogicalRange({ from: 0, to: view.length + margen });
   if(!big){
     const last = view[view.length-1]; const pct = (last.close-last.open)/last.open*100;
     const el = document.getElementById('px_'+coin.symbol);
@@ -538,7 +566,7 @@ function buildChart(box, rows, opt, coin, big, tf){
   return chart;
 }
 function drawChart(box, rows, opt, coin){ CHARTS.push(buildChart(box, rows, opt, coin, false, STATE.tf)); }
-function tfLabel(tf){ return tf==='D'?'Diario':tf==='W'?'Semanal':'Mensual'; }
+function tfLabel(tf){ return tf==='D'?'Diario':tf==='W'?'Semanal':tf==='M'?'Mensual':tf==='Q'?'Trimestral':'Anual'; }
 function clearCharts(){ CHARTS.forEach(c=>{ try{c.remove();}catch(e){} }); CHARTS=[]; }
 
 // ---------- modal (gráfico ampliado) ----------
