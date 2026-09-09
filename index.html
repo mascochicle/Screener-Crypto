@@ -105,6 +105,17 @@
   .note{color:var(--muted);font-size:12px;margin-top:2px;line-height:1.6}
   code{background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12px}
   a{color:var(--accent2)}
+  /* paneles plegables */
+  .cardhead{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .cardhead .toggle{background:transparent;color:var(--text);border:none;padding:2px 0;font-size:14px;
+    font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap}
+  .cardhead .toggle:hover{filter:none;color:var(--accent2)}
+  .cardhead .arrow2{display:inline-block;transition:transform .15s;color:var(--muted);font-size:11px}
+  .cardhead .toggle[aria-expanded="true"] .arrow2{transform:rotate(90deg)}
+  .cardhead .resumen{color:var(--muted);font-size:12px;flex:1;min-width:60px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cardhead .pager{margin-left:auto}
+  #bodyFiltros,#bodyOpciones{margin-top:14px}
   [hidden]{display:none!important}
   @media(max-width:640px){
     body{padding:14px} .tk .nm{display:none}
@@ -125,7 +136,12 @@
   <p class="sub">Top 100 por capitalización · velas UTC (el período reinicia a las 6:00 p. m. hora de México/Centroamérica)</p>
 
   <div class="card">
-    <div class="controls">
+    <div class="cardhead">
+      <button class="toggle" id="tgFiltros" aria-expanded="false"><span class="arrow2">▸</span> Filtros y criterios</button>
+      <span class="resumen" id="resFiltros"></span>
+      <button id="run">Actualizar ahora</button>
+    </div>
+    <div class="controls" id="bodyFiltros" hidden>
       <div class="ctrl" id="ctrlD"><label><input type="checkbox" class="critchk" id="cD" checked> Cambio diario mín. (%)</label><input type="number" id="uD" value="4" step="1" min="0"></div>
       <div class="ctrl" id="ctrlW"><label><input type="checkbox" class="critchk" id="cW" checked> Cambio semanal mín. (%)</label><input type="number" id="uW" value="5" step="1" min="0"></div>
       <div class="ctrl" id="ctrlM"><label><input type="checkbox" class="critchk" id="cM" checked> Cambio mensual mín. (%)</label><input type="number" id="uM" value="5" step="1" min="0"></div>
@@ -135,7 +151,6 @@
       <div class="ctrl"><label>Auto-actualizar</label>
         <select id="auto"><option value="0">Desactivado</option><option value="300">Cada 5 min</option><option value="900">Cada 15 min</option></select>
       </div>
-      <div class="ctrl"><label>&nbsp;</label><button id="run">Actualizar ahora</button></div>
     </div>
     <div class="status"><span class="spinner" id="spin"></span><span id="status">Cargando…</span></div>
   </div>
@@ -199,6 +214,16 @@
   <!-- ===================== VISTA GRÁFICOS ===================== -->
   <div id="viewGraf" hidden>
     <div class="card">
+      <div class="cardhead">
+        <button class="toggle" id="tgOpciones" aria-expanded="false"><span class="arrow2">▸</span> Opciones de gráficos</button>
+        <span class="resumen" id="resOpciones"></span>
+        <div class="pager">
+          <button id="gPrev">‹</button>
+          <span id="gPageInfo" style="font-size:12px;color:var(--muted)"></span>
+          <button id="gNext">›</button>
+        </div>
+      </div>
+      <div id="bodyOpciones" hidden>
       <div class="gcontrols">
         <div class="ctrl" style="min-width:200px"><label>Mostrar monedas de</label>
           <select id="gSource">
@@ -223,11 +248,6 @@
             <label><input type="checkbox" id="gLog" checked> Escala log</label>
           </div>
         </div>
-        <div class="pager">
-          <button id="gPrev">‹</button>
-          <span id="gPageInfo" style="font-size:12px;color:var(--muted)"></span>
-          <button id="gNext">›</button>
-        </div>
       </div>
       <div class="legend">
         <span><span class="swatch" style="background:var(--sma)"></span> SMA 200</span>
@@ -235,6 +255,7 @@
         <span><span class="swatch" style="background:var(--green)"></span> vela alcista</span>
         <span><span class="swatch" style="background:var(--red)"></span> vela bajista</span>
         <span style="margin-left:auto">Doble clic en un gráfico para ampliarlo</span>
+      </div>
       </div>
     </div>
     <div class="grid" id="grafGrid"></div>
@@ -426,6 +447,7 @@ function aplicarFiltros(){
   const resumen = activos.length
     ? 'Cumplen: ' + activos.map(a=>`${a.label} ≥ ${a.min}%`).join(' · ')
     : 'sin criterios activos';
+  const rf = $('#resFiltros'); if(rf) rf.textContent = resumen;   // visible con el panel cerrado
   CRITS.forEach(cr=>{
     const on = $('#'+cr.chk).checked;
     $(TABLES[cr.key].sec).hidden = !on;
@@ -596,6 +618,7 @@ function closeModal(){
 }
 
 async function renderCharts(){
+  resumenGraf();
   const grid = $('#grafGrid');
   if(typeof LightweightCharts==='undefined'){ grid.innerHTML='<div class="empty">No se pudo cargar la librería de gráficos (¿sin conexión?).</div>'; return; }
   if(!BINANCE){ try{ await pickBinanceBase(); }catch(e){ grid.innerHTML='<div class="empty">'+e.message+'</div>'; return; } }
@@ -657,6 +680,28 @@ $('#modal').addEventListener('click', e=>{ if(e.target.id==='modal') closeModal(
 document.querySelectorAll('#modalTf button').forEach(b=>b.addEventListener('click',()=>{ modalTf=b.dataset.tf; syncModalTf(); drawModal(); }));
 document.addEventListener('keydown', e=>{ if(e.key==='Escape' && !$('#modal').hidden) closeModal(); });
 
+// ---------- paneles plegables ----------
+function setPanel(btnId, abierto){
+  const btn  = document.getElementById(btnId);
+  const body = document.getElementById(btnId==='tgFiltros' ? 'bodyFiltros' : 'bodyOpciones');
+  if(!btn || !body) return;
+  body.hidden = !abierto;
+  btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+}
+['tgFiltros','tgOpciones'].forEach(id=>{
+  document.getElementById(id).addEventListener('click', ()=>{
+    setPanel(id, document.getElementById(id).getAttribute('aria-expanded')!=='true');
+    savePrefs();
+  });
+});
+// resumen compacto que se ve cuando el panel de gráficos está cerrado
+function resumenGraf(){
+  const op = $('#gSource').selectedOptions[0];
+  const ind = [['gVol','Vol'],['gSma','SMA 200'],['gEma','EMA 20'],['gLog','log']]
+    .filter(x=>$('#'+x[0]).checked).map(x=>x[1]).join(', ');
+  $('#resOpciones').textContent = `${op?op.textContent.trim():''} · ${tfLabel(STATE.tf)}${ind?' · '+ind:''}`;
+}
+
 // ---------- preferencias (localStorage) ----------
 const PREFS_KEY = 'screenerCriptoPrefs_v1';
 function savePrefs(){
@@ -665,7 +710,9 @@ function savePrefs(){
     vol:$('#gVol').checked, sma:$('#gSma').checked, ema:$('#gEma').checked, log:$('#gLog').checked,
     uD:$('#uD').value, uW:$('#uW').value, uM:$('#uM').value, uQ:$('#uQ').value, uY:$('#uY').value,
     cD:$('#cD').checked, cW:$('#cW').checked, cM:$('#cM').checked, cQ:$('#cQ').checked, cY:$('#cY').checked,
-    topn:$('#topn').value, auto:$('#auto').value
+    topn:$('#topn').value, auto:$('#auto').value,
+    pFil:$('#tgFiltros').getAttribute('aria-expanded')==='true',
+    pOpc:$('#tgOpciones').getAttribute('aria-expanded')==='true'
   })); }catch(e){}
 }
 function applyPrefs(){
@@ -677,6 +724,8 @@ function applyPrefs(){
   if(typeof p.sma==='boolean') $('#gSma').checked = p.sma;
   if(typeof p.ema==='boolean') $('#gEma').checked = p.ema;
   if(typeof p.log==='boolean') $('#gLog').checked = p.log;
+  setPanel('tgFiltros',  p.pFil===true);   // por defecto CERRADOS: se ven antes los gráficos
+  setPanel('tgOpciones', p.pOpc===true);
   if(p.tf){ STATE.tf = p.tf; document.querySelectorAll('#tfseg button').forEach(b=>b.classList.toggle('active', b.dataset.tf===p.tf)); }
   return p;
 }
@@ -698,6 +747,7 @@ $('#run').addEventListener('click', analizar);
 // ---------- inicio ----------
 const _p = applyPrefs();
 syncCritUI();
+resumenGraf();
 setView(_p.view || 'tabla');
 if(_p.auto && parseInt(_p.auto)>0) timer = setInterval(analizar, parseInt(_p.auto)*1000);
 analizar();
